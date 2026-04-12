@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Banco de Preguntas</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <%- include('../partials/header') %> 
+    <main class="main-content">
+        <div class="card" style="max-width: 600px; margin: 0 auto; border-top: 4px solid var(--primary);">
+            <h2 style="color: var(--primary); margin-bottom: 1.5rem;">Editar <%= banco.titulo %></h2>
+            <form action="/bancos/editar/<%= banco.id %>" method="POST">
+                <div class="form-group">
+                    <label>Título del Banco:</label>
+                    <input type="text" name="titulo" value="<%= banco.titulo %>" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Descripción:</label>
+                    <textarea name="descripcion" style="min-height: 100px; resize: vertical;"><%= banco.descripcion %></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Categoría Técnica:</label>
+                    <input type="text" name="categoria" value="<%= banco.categoria %>" placeholder="Ej: Desarrollo Web, Bases de Datos, DevOps..." required>
+                </div>
+
+                <div style="margin-top: 2rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                    <button type="submit" style="background-color: var(--primary);">Actualizar Banco</button>
+                    <a href="/bancos/ver/<%= banco.id %>" class="btn btn-secondary text-center" style="display: block;">Cancelar Cambios</a>
+                </div>
+            </form>
+        </div>
+    </main>
+</body>
+</html>

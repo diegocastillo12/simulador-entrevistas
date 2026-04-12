@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Explorar Bancos</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <%- include('../partials/header') %>
+
+    <main class="main-content">
+        <h1 style="margin-bottom: 2rem;">Bancos de Preguntas Disponibles</h1>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
+            <% if (bancos.length > 0) { %>
+                <% bancos.forEach(banco => { %>
+                    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; margin-bottom: 0;">
+                        <div>
+                            <h3 style="font-size: 1.15rem; color: var(--primary); margin-bottom: 0.5rem;"><%= banco.titulo %></h3>
+                            <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;"><%= banco.descripcion %></p>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                                <span style="background-color: #E0E7FF; color: var(--primary); padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.8rem; font-weight: 500;">
+                                    <%= banco.categoria %>
+                                </span>
+                                <span style="font-weight: 600; color: #F59E0B; display: flex; align-items: center; gap: 0.25rem; font-size: 0.85rem;" title="<%= banco.total_votos || 0 %> votos">
+                                    <%= banco.promedio ? Number(banco.promedio).toFixed(1) : '0.0' %> ⭐ <small style="color: var(--text-muted);">(<%= banco.total_votos || 0 %>)</small>
+                                </span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1.5rem;">
+                            <a href="/bancos/ver/<%= banco.id %>" class="btn" style="padding: 0.6rem; text-align: center;">Ver Preguntas →</a>
+                        </div>
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <div class="card text-center" style="grid-column: 1 / -1; border-style: dashed;">
+                    <p style="margin: 0; color: var(--text-muted);">No hay bancos creados todavía. ¡Sé el primero!</p>
+                </div>
+            <% } %>
+        </div>
+    </main>
+</body>
+</html>

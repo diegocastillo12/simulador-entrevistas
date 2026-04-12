@@ -1,0 +1,363 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title><%= banco.titulo %> - Simulador</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .examen-option { margin-bottom: 0.5rem; display: block; cursor: pointer; transition: all 0.2s ease; }
+        .examen-option:hover { border-color: #CBD5E1 !important; background-color: #F8FAFC; }
+        .seleccionada { border-color: var(--primary) !important; background-color: #EEF2FF !important; }
+        .correcto { background-color: #D1FAE5 !important; border-color: #10B981 !important; color: #065F46; }
+        .incorrecto { background-color: #FEE2E2 !important; border-color: #EF4444 !important; color: #991B1B; }
+        .autor-actions { display: flex; gap: 0.5rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); }
+    </style>
+</head>
+<body>
+    <%- include('../partials/header') %>
+
+    <main class="main-content">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1 style="margin-bottom: 0.25rem;"><%= banco.titulo %></h1>
+                    <div style="color: #F59E0B; font-weight: bold; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;" title="<%= banco.total_votos || 0 %> votos recibidos">
+                        <span><%= banco.promedio ? Number(banco.promedio).toFixed(1) : '0.0' %></span>
+                        <span>⭐</span>
+                        <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: normal;">(<%= banco.total_votos || 0 %>)</span>
+                    </div>
+                </div>
+                
+                <form action="/bancos/calificar" method="POST" class="card" style="background-color: #FEF3C7; border-color: #FDE68A; padding: 1rem; margin-bottom: 0;">
+                    <input type="hidden" name="banco_id" value="<%= banco.id %>">
+                    <label style="font-size: 0.9rem; font-weight: 600; color: #92400E; margin-bottom: 0.5rem; display: block;">Calificar este banco:</label>
+                    <select name="estrellas" onchange="this.form.submit()" style="padding: 0.5rem; border-color: #FDE68A; cursor: pointer;">
+                        <option value="">⭐ Selecciona</option>
+                        <option value="5">⭐⭐⭐⭐⭐ (Excelente)</option>
+                        <option value="4">⭐⭐⭐⭐ (Muy bueno)</option>
+                        <option value="3">⭐⭐⭐ (Bueno)</option>
+                        <option value="2">⭐⭐ (Regular)</option>
+                        <option value="1">⭐ (Malo)</option>
+                    </select>
+                </form>
+            </div>
+
+            <p style="padding-bottom: 1rem; margin-top: 1rem;">
+                <span style="background-color: #E0E7FF; color: var(--primary); padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 600; margin-right: 0.5rem;">
+                    <%= banco.categoria %>
+                </span>
+                <span><%= banco.descripcion %></span>
+            </p>
+
+            <% if (typeof user !== "undefined" && user.id === banco.autor_id) { %>
+                <div class="autor-actions">
+                    <a href="/bancos/editar/<%= banco.id %>" class="btn btn-secondary" style="width: auto; padding: 0.5rem 1rem;">✏️ Editar Banco</a>
+                    <form action="/bancos/eliminar/<%= banco.id %>" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar todo el simulador y sus preguntas?');" style="margin: 0;">
+                        <button type="submit" class="btn btn-danger" style="width: auto; padding: 0.5rem 1rem;">🗑️ Eliminar Banco</button>
+                    </form>
+                </div>
+            <% } %>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); margin-top: 2rem; padding-top: 1rem;">
+                <h2 class="mt-2 text-primary" style="margin: 0;">Simulador (Modo Examen)</h2>
+                <% if (preguntas.length > 0) { %>
+                    <div id="examen-timer" style="background-color: var(--danger-color, #EF4444); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: bold; font-family: monospace; font-size: 1.25rem;">
+                        ⏱️ <span id="time-display">10:00</span>
+                    </div>
+                <% } %>
+            </div>
+
+            <% if (typeof leaderboard !== 'undefined' && leaderboard.length > 0) { %>
+                <div class="card" style="margin-top: 1.5rem; margin-bottom: 2rem; background-color: #FFFBEB; border: 1px solid #FDE68A; padding: 1.5rem;">
+                    <h3 style="color: #D97706; margin-top: 0; margin-bottom: 1rem; border-bottom: 1px solid #FDE68A; padding-bottom: 0.5rem;">🏆 Top 5 Mejores Intentos</h3>
+                    <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <% leaderboard.forEach(function(intento, i) { %>
+                            <li style="display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem;">
+                                <strong><span style="color: #B45309;">#<%= i + 1 %></span> <%= intento.nombre %></strong>
+                                <span><strong style="color: #059669;"><%= intento.puntaje %>/<%= intento.total %></strong> aciertos en <%= intento.tiempo_segundos %>s ⏱️</span>
+                            </li>
+                        <% }) %>
+                    </ul>
+                </div>
+            <% } %>
+
+            <% if (preguntas.length > 0) { %>
+                <form id="examenForm" data-banco-id="<%= banco.id %>">
+                    <div style="display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 2rem;">
+                    <% preguntas.forEach((p, index) => { %>
+                        <div class="card pregunta-card" style="margin-bottom: 0; background-color: #F8FAFC;" data-correcta="<%= p.respuesta_correcta %>" data-id="<%= p.id %>">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <h3 style="font-size: 1.1rem; margin-bottom: 1rem; color: var(--text-main);">
+                                    <span style="color: var(--primary);"><%= index + 1 %>.</span> <%= p.enunciado %>
+                                </h3>
+                                
+                                <% if (typeof user !== "undefined" && user.id === banco.autor_id) { %>
+                                    <button type="button" onclick="eliminarPregunta(<%= p.id %>)" style="background: none; border: none; color: #EF4444; width: auto; padding: 0.2rem 0.5rem; font-size: 1rem; cursor:pointer;" title="Eliminar Pregunta">🗑️</button>
+                                <% } %>
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <% let opcionesAMostrar = p.opciones_mezcladas; 
+                                   if (!opcionesAMostrar) {
+                                       opcionesAMostrar = [
+                                           { letra: 'A', valor: p.opcion_a },
+                                           { letra: 'B', valor: p.opcion_b },
+                                           { letra: 'C', valor: p.opcion_c },
+                                           { letra: 'D', valor: p.opcion_d },
+                                           { letra: 'E', valor: p.opcion_e },
+                                           { letra: 'F', valor: p.opcion_f }
+                                       ].filter(opt => opt.valor && opt.valor.trim() !== '');
+                                   }
+                                %>
+                                
+                                <% opcionesAMostrar.forEach(opt => { %>
+                                    <label class="examen-option" style="background: white; padding: 0.75rem 1rem; border: 1px solid var(--border-color); border-radius: 6px;">
+                                        <input type="radio" name="p_<%= index %>" value="<%= opt.letra %>" style="margin-right: 0.5rem;"> <strong><%= opt.letra %>)</strong> <%= opt.valor %>
+                                    </label>
+                                <% }) %>
+                            </div>
+                        </div>
+                    <% }) %>
+                    </div>
+                    
+                    <div style="background-color: var(--primary); color: white; padding: 1.5rem; border-radius: 8px; text-align: center; margin-bottom: 1.5rem;">
+                        <h3 id="resultadoTexto" style="color: white; margin-bottom: 1rem; font-size: 1.5rem; display: none;"></h3>
+                        <button type="button" id="btnRevisar" class="btn" style="background-color: white; color: var(--primary); width: auto; font-size: 1.1rem; padding: 1rem 3rem;">Revisar Respuestas</button>
+                    </div>
+                </form>
+
+            <% } else { %>
+                <div class="card text-center" style="background-color: #F8FAFC; border-style: dashed; padding: 3rem;">
+                    <p style="margin: 0; color: var(--text-muted); font-size: 1.1rem;">Este banco aún no tiene preguntas.</p>
+                </div>
+            <% } %>
+
+            <div class="mt-2">
+                <a href="/dashboard" class="btn btn-secondary" style="width: auto; display: inline-flex; align-items: center; gap: 0.5rem;">← Volver al Dashboard</a>
+            </div>
+
+            <% if (typeof user !== "undefined" && user.id === banco.autor_id) { %>
+                <hr style="margin: 3rem 0; border: 0; border-top: 1px solid var(--border-color);">
+                <div class="card" style="background-color: #F0FDF4; border-color: #BBF7D0;">
+                    <div style="margin-bottom: 1.5rem;">
+                        <h2 style="color: #166534; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                            ➕ Agregar Nueva Pregunta
+                        </h2>
+                    </div>
+                    
+                    <form action="/preguntas/crear" method="POST">
+                        <input type="hidden" name="banco_id" value="<%= banco.id %>">
+                        
+                        <div class="form-group">
+                            <label>Enunciado de la pregunta:</label>
+                            <input type="text" name="enunciado" placeholder="Ej: ¿Cuál es el patrón de diseño...?" required>
+                        </div>
+                        
+                        <div id="opciones-dinamicas-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 0.5rem;">
+                            <!-- Las opciones A y B son obligatorias por defecto -->
+                            <div class="opcion-item" data-letra="A">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Opción A:</label>
+                                <input type="text" name="opcion_a" required>
+                            </div>
+                            <div class="opcion-item" data-letra="B">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Opción B:</label>
+                                <input type="text" name="opcion_b" required>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 1.25rem; display: flex; gap: 0.5rem;">
+                            <button type="button" id="btnAgregarOpcion" class="btn btn-secondary" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">➕ Agregar más opciones</button>
+                            <button type="button" id="btnQuitarOpcion" class="btn btn-danger" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem; display: none;">➖ Quitar última</button>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Respuesta Correcta:</label>
+                            <select name="respuesta_correcta" id="selectCorrecta" required>
+                                <option value="" disabled selected>Selecciona la correcta</option>
+                                <option value="A">Opción A</option>
+                                <option value="B">Opción B</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" style="background-color: #16A34A; transition: background-color 0.2s;">
+                            Guardar Pregunta en el Banco
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Form oculto para eliminar preguntas -->
+                <form id="formDeletePregunta" action="" method="POST" style="display:none;">
+                    <input type="hidden" name="banco_id" value="<%= banco.id %>">
+                </form>
+            <% } %>
+        </div>
+    </main>
+
+    <script>
+        // Configuración del temporizador
+        let tiempoRestante = 10 * 60; // 10 minutos
+        let tiempoInicio = Date.now();
+        const timerEl = document.getElementById("time-display");
+        let intervaloTimer;
+
+        if (timerEl) {
+            intervaloTimer = setInterval(() => {
+                tiempoRestante--;
+                let min = Math.floor(tiempoRestante / 60).toString().padStart(2, '0');
+                let sec = (tiempoRestante % 60).toString().padStart(2, '0');
+                timerEl.innerText = `${min}:${sec}`;
+                if (tiempoRestante <= 0) {
+                    clearInterval(intervaloTimer);
+                    const btn = document.getElementById('btnRevisar');
+                    if (btn) btn.click();
+                }
+            }, 1000);
+        }
+
+        // Lógica visual al marcar una opción
+        document.querySelectorAll('input[type="radio"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const card = e.target.closest('.pregunta-card');
+                card.querySelectorAll('.examen-option').forEach(l => l.classList.remove('seleccionada'));
+                e.target.closest('.examen-option').classList.add('seleccionada');
+            });
+        });
+
+        // Lógica del modo examen
+        const btnRevisar = document.getElementById('btnRevisar');
+        if (btnRevisar) {
+            btnRevisar.addEventListener('click', () => {
+                let correctas = 0;
+                const total = document.querySelectorAll('.pregunta-card').length;
+
+                document.querySelectorAll('.pregunta-card').forEach((card, index) => {
+                    const correcta = card.getAttribute('data-correcta');
+                    const opciones = card.querySelectorAll('input[type="radio"]');
+                    const labels = card.querySelectorAll('.examen-option');
+                    
+                    labels.forEach(l => {
+                        l.classList.remove('correcto', 'incorrecto', 'seleccionada');
+                    });
+
+                    opciones.forEach((radio, radioIndex) => {
+                        radio.disabled = true; // Deshabilitar para no cambiar tras revisar
+                        if (radio.checked) {
+                            if (radio.value === correcta) {
+                                labels[radioIndex].classList.add('correcto');
+                                correctas++;
+                            } else {
+                                labels[radioIndex].classList.add('incorrecto');
+                            }
+                        }
+                        if (radio.value === correcta && !radio.checked) {
+                            labels[radioIndex].classList.add('correcto');
+                        }
+                    });
+                });
+
+                const divResultado = document.getElementById('resultadoTexto');
+                divResultado.style.display = 'block';
+                divResultado.textContent = `🎯 Resultado: ${correctas} / ${total} correctas`;
+                btnRevisar.style.display = 'none'; 
+
+                // Detener timer y guardar en DB
+                if (intervaloTimer) clearInterval(intervaloTimer);
+                const tiempoFinal = Date.now();
+                const tiempoSegundos = Math.floor((tiempoFinal - tiempoInicio) / 1000);
+
+                const form = document.getElementById('examenForm');
+                const bancoId = form ? form.getAttribute('data-banco-id') : null;
+                
+                if (bancoId) {
+                    fetch('/intentos/guardar', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            banco_id: bancoId,
+                            puntaje: correctas,
+                            total: total,
+                            tiempo_segundos: tiempoSegundos
+                        })
+                    }).then(res => res.json()).then(data => {
+                        if (data.success) {
+                            divResultado.innerHTML += `<br><span style="font-size: 0.9rem; color: #D1FAE5; display: block; margin-top: 0.5rem;">✅ Guardado en el historial (${tiempoSegundos}s)</span>`;
+                        }
+                    }).catch(err => console.error('Error al guardar intento:', err));
+                }
+            });
+        }
+
+        // Lógica para eliminar pregunta
+        function eliminarPregunta(id) {
+            if (confirm('¿Estás seguro de eliminar esta pregunta?')) {
+                const form = document.getElementById('formDeletePregunta');
+                form.action = '/preguntas/eliminar/' + id;
+                form.submit();
+            }
+        }
+
+        // Lógica para agregar/quitar opciones dinámicamente
+        const btnAgregar = document.getElementById('btnAgregarOpcion');
+        const btnQuitar = document.getElementById('btnQuitarOpcion');
+        const contenedorOpciones = document.getElementById('opciones-dinamicas-container');
+        const selectCorrecta = document.getElementById('selectCorrecta');
+        
+        const maxOpciones = 6;
+        const abecedario = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+        if (btnAgregar && btnQuitar) {
+            let numOpciones = 2; // Empieza con A y B obligatorias
+
+            btnAgregar.addEventListener('click', () => {
+                if (numOpciones < maxOpciones) {
+                    const letra = abecedario[numOpciones]; // A(0), B(1), C(2), etc.
+                    
+                    // Crear nuevo div
+                    const div = document.createElement('div');
+                    div.className = 'opcion-item';
+                    div.dataset.letra = letra;
+                    div.innerHTML = `
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Opción ${letra}:</label>
+                        <input type="text" name="opcion_${letra.toLowerCase()}" required>
+                    `;
+                    contenedorOpciones.appendChild(div);
+
+                    // Agregar opción al select
+                    const option = document.createElement('option');
+                    option.value = letra;
+                    option.textContent = `Opción ${letra}`;
+                    selectCorrecta.appendChild(option);
+
+                    numOpciones++;
+                    actualizarBotonesDinamicos();
+                }
+            });
+
+            btnQuitar.addEventListener('click', () => {
+                if (numOpciones > 2) {
+                    // Remover el último hijo
+                    const items = contenedorOpciones.querySelectorAll('.opcion-item');
+                    const ultimoItem = items[items.length - 1];
+                    contenedorOpciones.removeChild(ultimoItem);
+
+                    // Remover del select (el select tiene: option vacía, option A, option B... -> length - 1)
+                    selectCorrecta.removeChild(selectCorrecta.lastChild);
+
+                    // Resetear valor si la que quitaron era la elegida
+                    if (![...selectCorrecta.options].map(o => o.value).includes(selectCorrecta.value)) {
+                        selectCorrecta.value = "";
+                    }
+
+                    numOpciones--;
+                    actualizarBotonesDinamicos();
+                }
+            });
+
+            function actualizarBotonesDinamicos() {
+                btnAgregar.style.display = numOpciones < maxOpciones ? 'inline-block' : 'none';
+                btnQuitar.style.display = numOpciones > 2 ? 'inline-block' : 'none';
+            }
+        }
+    </script>
+</body>
+</html>
