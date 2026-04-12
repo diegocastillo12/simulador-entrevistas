@@ -3,6 +3,15 @@ const router = express.Router();
 const authController = require('../controllers/authController');
 const Banco = require('../models/bancoModel');
 
+// --- RUTA PRINCIPAL ---
+router.get('/', (req, res) => {
+    if (req.session && req.session.userId) {
+        res.redirect('/dashboard');
+    } else {
+        res.redirect('/login');
+    }
+});
+
 // --- RUTAS DE AUTENTICACIÓN ---
 router.get('/login', authController.getLogin);
 router.post('/login', authController.postLogin);
