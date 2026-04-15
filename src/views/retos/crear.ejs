@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Reto - Simulador Comunitario</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .form-crear-reto {
+            background-color: var(--light-bg);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        textarea.form-control {
+            resize: vertical;
+        }
+        .casos-container {
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            border-radius: 8px;
+            background: #fff;
+        }
+        .caso-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .caso-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <%- include('../partials/header') %>
+
+    <div class="container">
+        <h2 style="text-align: center;">Crear Nuevo Reto de Código</h2>
+        <p style="text-align: center; color: #555;">Sube tu propio ejercicio técnico para que otros lo resuelvan.</p>
+        
+        <form class="form-crear-reto" action="/retos/crear" method="POST">
+            <div class="form-group">
+                <label>Título del Reto</label>
+                <input type="text" name="titulo" class="form-control" required placeholder="Ej: Palíndromos Recursivos">
+            </div>
+
+            <div class="form-group">
+                <label>Enunciado (Instrucciones)</label>
+                <textarea name="enunciado" class="form-control" rows="4" required placeholder="Explica claramente lo que el usuario debe hacer..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Código Inicial (Plantilla)</label>
+                <textarea name="codigo_inicial" class="form-control" rows="5" placeholder="function solucion(param) {&#10;  // Tu lógica aquí&#10;}"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex:1;">
+                    <label>Dificultad</label>
+                    <select name="dificultad" class="form-control" required>
+                        <option value="Fácil">Fácil</option>
+                        <option value="Medio">Medio</option>
+                        <option value="Difícil">Difícil</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>Lenguaje</label>
+                    <input type="text" name="lenguaje" class="form-control" required placeholder="Ej: JavaScript, Python, C++" value="JavaScript">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Pista (Opcional)</label>
+                <input type="text" name="pista" class="form-control" placeholder="Ej: Intenta usar el método split() y reverse().">
+            </div>
+
+            <hr>
+            
+            <div class="form-group">
+                <label>Casos de Prueba (Mínimo 2 recomendados)</label>
+                <p style="font-size:0.9em; color:#666;">Ingresa los parámetros divididos por comas y la salida exacta (usa comillas si es string).</p>
+                <div class="casos-container" id="casos-container">
+                    <!-- Fila Base 1 -->
+                    <div class="caso-row">
+                        <input type="text" name="casos_input" class="form-control" required placeholder='Ej: "hola"'>
+                        <input type="text" name="casos_output" class="form-control" required placeholder='Ej: "aloh"'>
+                        <label style="margin:0; font-weight:normal; width:120px;">
+                            <input type="checkbox" name="casos_visible" value="1" checked> Visible
+                        </label>
+                    </div>
+                    <!-- Fila Base 2 -->
+                    <div class="caso-row">
+                        <input type="text" name="casos_input" class="form-control" required placeholder='Ej: "sol"'>
+                        <input type="text" name="casos_output" class="form-control" required placeholder='Ej: "los"'>
+                        <label style="margin:0; font-weight:normal; width:120px;">
+                            <input type="checkbox" name="casos_visible" value="1"> Visible
+                        </label>
+                    </div>
+                </div>
+                <button type="button" class="btn-secondary" style="margin-top:10px;" onclick="agregarCaso()">+ Agregar otro caso</button>
+            </div>
+
+            <button type="submit" class="btn" style="width: 100%; font-size: 1.1em;">Guardar Reto</button>
+            <a href="/retos" style="display:block; text-align:center; margin-top:15px; color:#555;">Cancelar</a>
+        </form>
+    </div>
+
+    <script>
+        function agregarCaso() {
+            const container = document.getElementById('casos-container');
+            const row = document.createElement('div');
+            row.className = 'caso-row';
+            row.innerHTML = `
+                <input type="text" name="casos_input" class="form-control" required placeholder='Input...'>
+                <input type="text" name="casos_output" class="form-control" required placeholder='Output...'>
+                <label style="margin:0; font-weight:normal; width:120px;">
+                    <input type="checkbox" name="casos_visible" value="1"> Visible
+                </label>
+                <button type="button" class="btn-danger" onclick="this.parentElement.remove()">X</button>
+            `;
+            container.appendChild(row);
+        }
+    </script>
+</body>
+</html>

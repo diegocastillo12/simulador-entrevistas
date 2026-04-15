@@ -293,4 +293,162 @@ router.post('/bancos/calificar', async (req, res) => {
     }
 });
 
+// --- RUTAS DE RETOS DE CÓDIGO ---
+router.get('/retos', async (req, res) => {
+    if (!req.session.userId) return res.redirect('/login');
+    try {
+        const db = require('../config/db');
+        const [retos] = await db.execute(`
+            SELECT r.*, 
+            (SELECT COUNT(*) FROM intentos_retos ir WHERE ir.reto_id = r.id AND ir.usuario_id = ? AND ir.resultado = 'Exitoso') as resuelto,
+            AVG(cr.estrellas) as promedio_estrellas,
+            COUNT(cr.id) as total_votos
+            FROM retos r
+            LEFT JOIN calificaciones_retos cr ON r.id = cr.reto_id
+            GROUP BY r.id
+        `, [req.session.userId]);
+        
+        res.render('retos/lista', { retos });
+    } catch (error) {
+        console.error(error);
+        res.send("Error al cargar la lista de retos");
+    }
+});
+
+// --- RUTA PARA CREAR NUEVO RETO ---
+router.get('/retos/crear', (req, res) => {
+    if (!req.session.userId) return res.redirect('/login');
+    res.render('retos/crear');
+});
+
+router.post('/retos/crear', async (req, res) => {
+    if (!req.session.userId) return res.redirect('/login');
+    const { titulo, enunciado, codigo_inicial, dificultad, lenguaje, pista, casos_input, casos_output, casos_visible } = req.body;
+    
+    try {
+        const db = require('../config/db');
+        
+        // Limpiar "Input:" / "Output:" y extraer test_input y test_output del primer caso
+        let inputs = Array.isArray(casos_input) ? casos_input : [casos_input];
+        let outputs = Array.isArray(casos_output) ? casos_output : [casos_output];
+        let visibles = Array.isArray(casos_visible) ? casos_visible : [casos_visible];
+
+        // Quitar cualquier prefijo manual que el usuario haya escrito ("Input:", "Output:")
+        inputs = inputs.map(i => i ? i.replace(/^input\s*(ej)?:?\s*/i, '').replace(/^ej:\s*/i, '').trim() : '');
+        outputs = outputs.map(o => o ? o.replace(/^output\s*(ej)?:?\s*/i, '').replace(/^ej:\s*/i, '').trim() : '');
+
+        let test_input = inputs.length > 0 && inputs[0] !== '' ? inputs[0] : null;
+        let test_output = outputs.length > 0 && outputs[0] !== '' ? outputs[0] : null;
+
+        const [result] = await db.execute(
+            'INSERT INTO retos (titulo, enunciado, codigo_inicial, test_input, test_output, dificultad, lenguaje, pista, autor_id, puntos) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [titulo, enunciado, codigo_inicial || '', test_input, test_output, dificultad, lenguaje || 'JavaScript', pista || null, req.session.userId, 10]
+        );
+        
+        const retoId = result.insertId;
+
+        // Validar e insertar los casos de prueba
+        for (let i = 0; i < inputs.length; i++) {
+            if (inputs[i] && outputs[i]) {
+                const es_visible = visibles[i] == '1' || visibles[i] == 'on' ? 1 : 0;
+                await db.execute(
+                    'INSERT INTO casos_prueba (reto_id, input, output_esperado, es_visible) VALUES (?, ?, ?, ?)',
+                    [retoId, inputs[i], outputs[i], es_visible]
+                );
+            }
+        }
+        res.redirect('/retos');
+    } catch (error) {
+        console.error("Error al guardar el reto", error);
+        res.send("Error al guardar el reto");
+    }
+});
+
+// --- RUTA PARA CALIFICAR O EVALUAR RETOS ---
+router.post('/retos/calificar', async (req, res) => {
+    if (!req.session.userId) return res.redirect('/login');
+    const { reto_id, estrellas } = req.body;
+    try {
+        const db = require('../config/db');
+        await db.execute(
+            'INSERT INTO calificaciones_retos (usuario_id, reto_id, estrellas) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE estrellas = ?',
+            [req.session.userId, reto_id, estrellas, estrellas]
+        );
+        res.redirect('/retos/resolver/' + reto_id);
+    } catch (error) {
+        console.error(error);
+        res.send("Error al calificar el reto");
+    }
+});
+
+router.get('/retos/resolver/:id', async (req, res) => {
+    if (!req.session.userId) return res.redirect('/login');
+    const retoId = req.params.id;
+    try {
+        const db = require('../config/db');
+        const [retos] = await db.execute('SELECT * FROM retos WHERE id = ?', [retoId]);
+        
+        if (retos.length > 0) {
+            // Ranking de este reto
+            const [leaderboard] = await db.execute(`
+                SELECT u.nombre, ir.fecha
+                FROM intentos_retos ir
+                JOIN usuarios u ON ir.usuario_id = u.id
+                WHERE ir.reto_id = ? AND ir.resultado = 'Exitoso'
+                ORDER BY ir.fecha ASC
+                LIMIT 5
+            `, [retoId]);
+
+            // Casos de prueba
+            let casosPrueba = [];
+            try {
+                const [rows] = await db.execute('SELECT * FROM casos_prueba WHERE reto_id = ?', [retoId]);
+                casosPrueba = rows;
+            } catch (err) {
+                console.log("Aviso: tabla casos_prueba no encontrada o error:", err.message);
+            }
+            
+            // Total de intentos del usuario
+            let contadorIntentos = 0;
+            const [intentos] = await db.execute('SELECT COUNT(*) as total FROM intentos_retos WHERE reto_id = ? AND usuario_id = ?', [retoId, req.session.userId]);
+            if (intentos && intentos.length > 0) {
+                contadorIntentos = intentos[0].total || 0;
+            }
+
+            res.render('retos/resolver', { 
+                reto: retos[0],
+                casosPrueba: casosPrueba || [],
+                intentosTotales: contadorIntentos,
+                leaderboard: leaderboard 
+            });
+        } else {
+            res.send("El reto no existe o fue eliminado.");
+        }
+    } catch (error) {
+        console.error(error);
+        res.send("Error al cargar el reto.");
+    }
+});
+
+router.post('/retos/enviar', async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ error: "No autorizado" });
+    
+    const { reto_id, codigo, resultado } = req.body;
+    
+    try {
+        const db = require('../config/db');
+        
+        // Registrar intento en DB
+        await db.execute(
+            'INSERT INTO intentos_retos (usuario_id, reto_id, codigo_enviado, resultado) VALUES (?, ?, ?, ?)',
+            [req.session.userId, reto_id, codigo, resultado]
+        );
+        
+        res.json({ success: true, message: "Resultado guardado correctamente" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al guardar tu solución" });
+    }
+});
+
 module.exports = router;

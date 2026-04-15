@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retos de Código</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .filter-bar {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .filter-select {
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+        .reto-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3 columnas fijas */
+            gap: 20px;
+            margin-top: 20px;
+        }
+        @media (max-width: 900px) {
+            .reto-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 600px) {
+            .reto-grid { grid-template-columns: 1fr; }
+        }
+        .reto-card {
+            background-color: var(--light-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .reto-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        
+        .reto-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .dificultad {
+            font-size: 0.8em;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .dif-fácil { background: #d4edda; color: #155724; }
+        .dif-medio { background: #fff3cd; color: #856404; }
+        .dif-difícil { background: #f8d7da; color: #721c24; }
+        
+        .resuelto-badge {
+            background: #28a745;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .reto-title { 
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.25em; 
+            color: var(--primary-color);
+        }
+        .reto-desc {
+            flex-grow: 1; /* Esto hace que las tarjetas mantengan un tamaño uniforme empujando el botón hacia abajo */
+        }
+        .estrellas {
+            color: #ffc107;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+        .btn-crear-reto {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-left: auto;
+        }
+        .btn-crear-reto:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <%- include('../partials/header') %>
+
+    <div class="container">
+        <div style="display:flex; justify-content: space-between; align-items:center;">
+            <h2>🔥 Retos de Programación</h2>
+            <a href="/retos/crear" class="btn-crear-reto">+ Crear Reto</a>
+        </div>
+        
+        <p>Mejora tu lógica resolviendo problemas técnicos reales de entrevistas o aporta tus propios ejercicios a la comunidad.</p>
+        
+        <!-- BARRA DE FILTROS -->
+        <div class="filter-bar">
+            <strong>Filtros:</strong>
+            <select id="filtro-dificultad" class="filter-select" onchange="filtrar()">
+                <option value="todos">Todas las Dificultades</option>
+                <option value="Fácil">Fácil</option>
+                <option value="Medio">Medio</option>
+                <option value="Difícil">Difícil</option>
+            </select>
+            
+            <select id="filtro-estado" class="filter-select" onchange="filtrar()">
+                <option value="todos">Todos los Estados</option>
+                <option value="resueltos">Resueltos</option>
+                <option value="pendientes">Pendientes</option>
+            </select>
+        </div>
+
+        <div class="reto-grid" id="grid">
+            <% if(retos.length === 0) { %>
+                <p style="grid-column: span 3;">Aún no hay retos publicados. ¡Sé el primero en aportar!</p>
+            <% } %>
+
+            <% retos.forEach(reto => { 
+                const diffLabel = reto.dificultad;
+                const isResuelto = reto.resuelto > 0;
+            %>
+                <div class="reto-card" data-dificultad="<%= diffLabel %>" data-resuelto="<%= isResuelto ? 'true' : 'false' %>">
+                    <div>
+                        <div class="reto-header">
+                            <span class="dificultad dif-<%= diffLabel.toLowerCase() %>"><%= diffLabel %></span>
+                            <% if (isResuelto) { %>
+                                <span class="resuelto-badge">✅ Resuelto</span>
+                            <% } %>
+                        </div>
+                        
+                        <h3 class="reto-title"><%= reto.titulo %></h3>
+                        
+                        <div class="estrellas">
+                            <% let prom = parseFloat(reto.promedio_estrellas) || 0; %>
+                            <% for(let i=1; i<=5; i++) { %>
+                                <% if (i <= Math.round(prom)) { %>★<% } else { %>☆<% } %>
+                            <% } %>
+                            <span style="color:#666; font-size:0.8em; margin-left: 5px;">(<%= reto.total_votos %>) votos</span>
+                        </div>
+
+                        <div class="reto-desc">
+                            <p><%= reto.enunciado.substring(0, 100) %><%= reto.enunciado.length > 100 ? '...' : '' %></p>
+                            <p style="font-size: 0.9em; color:#555;"><strong>Lenguaje:</strong> <%= reto.lenguaje %> | <strong>Puntos:</strong> <%= reto.puntos %></p>
+                        </div>
+                    </div>
+                    
+                    <a href="/retos/resolver/<%= reto.id %>" class="btn" style="margin-top: 15px; display: block; text-align: center;">Intentar Reto</a>
+                </div>
+            <% }) %>
+        </div>
+    </div>
+
+    <!-- SCRIPTS DE FILTRADO JS -->
+    <script>
+        function filtrar() {
+            const valDificultad = document.getElementById('filtro-dificultad').value;
+            const valEstado = document.getElementById('filtro-estado').value;
+            const tarjetas = document.querySelectorAll('.reto-card');
+
+            tarjetas.forEach(t => {
+                const diff = t.getAttribute('data-dificultad');
+                const isResuelto = t.getAttribute('data-resuelto') === 'true';
+
+                let muestra = true;
+
+                // Filtro dificultad
+                if (valDificultad !== 'todos' && diff !== valDificultad) {
+                    muestra = false;
+                }
+
+                // Filtro estado
+                if (valEstado !== 'todos') {
+                    if (valEstado === 'resueltos' && !isResuelto) muestra = false;
+                    if (valEstado === 'pendientes' && isResuelto) muestra = false;
+                }
+
+                t.style.display = muestra ? 'flex' : 'none';
+            });
+        }
+    </script>
+</body>
+</html>
