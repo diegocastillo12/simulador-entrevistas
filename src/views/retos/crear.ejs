@@ -36,7 +36,7 @@
             border: 1px solid var(--border-color);
             padding: 15px;
             border-radius: 8px;
-            background: #fff;
+            background: #1e293b; border: 1px solid #334155; color: #f8fafc;
         }
         .caso-row {
             display: flex;
@@ -106,7 +106,13 @@
                 </div>
                 <div class="form-group" style="flex:1;">
                     <label>Lenguaje</label>
-                    <input type="text" name="lenguaje" class="form-control" required placeholder="Ej: JavaScript, Python, C++" value="JavaScript">
+                    <select name="lenguaje" class="form-control" required>
+                        <option value="JavaScript">JavaScript</option>
+                        <option value="Python">Python</option>
+                        <option value="Java">Java</option>
+                        <option value="C++">C++</option>
+                        <option value="C#">C#</option>
+                    </select>
                 </div>
             </div>
 

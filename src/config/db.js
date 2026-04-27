@@ -8,7 +8,7 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME,
     port: process.env.DB_PORT || 3306,
     waitForConnections: true,
-    connectionLimit: 10
+    connectionLimit: 4 /* Reducido a 4 porque el host gratuito solo soporta 5 conexiones simultáneas máximo */
 });
 
 module.exports = pool.promise();

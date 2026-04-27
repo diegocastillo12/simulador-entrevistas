@@ -6,8 +6,8 @@
     <link rel="stylesheet" href="/css/style.css">
     <style>
         .examen-option { margin-bottom: 0.5rem; display: block; cursor: pointer; transition: all 0.2s ease; }
-        .examen-option:hover { border-color: #CBD5E1 !important; background-color: #F8FAFC; }
-        .seleccionada { border-color: var(--primary) !important; background-color: #EEF2FF !important; }
+        .examen-option:hover { border-color: #CBD5E1 !important; background-color: #1e293b; }
+        .seleccionada { border-color: #818cf8 !important; background-color: #EEF2FF !important; }
         .correcto { background-color: #D1FAE5 !important; border-color: #10B981 !important; color: #065F46; }
         .incorrecto { background-color: #FEE2E2 !important; border-color: #EF4444 !important; color: #991B1B; }
         .autor-actions { display: flex; gap: 0.5rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); }
@@ -28,10 +28,10 @@
                     </div>
                 </div>
                 
-                <form action="/bancos/calificar" method="POST" class="card" style="background-color: #FEF3C7; border-color: #FDE68A; padding: 1rem; margin-bottom: 0;">
+                <form action="/bancos/calificar" method="POST" class="card" style="background-color: #1e293b; border-color: #334155; padding: 1rem; margin-bottom: 0;">
                     <input type="hidden" name="banco_id" value="<%= banco.id %>">
-                    <label style="font-size: 0.9rem; font-weight: 600; color: #92400E; margin-bottom: 0.5rem; display: block;">Calificar este banco:</label>
-                    <select name="estrellas" onchange="this.form.submit()" style="padding: 0.5rem; border-color: #FDE68A; cursor: pointer;">
+                    <label style="font-size: 0.9rem; font-weight: 600; color: #fbbf24; margin-bottom: 0.5rem; display: block;">Calificar este banco:</label>
+                    <select name="estrellas" onchange="this.form.submit()" style="padding: 0.5rem; border-color: #334155; background: #0f172a; color: #f8fafc; cursor: pointer;">
                         <option value="">⭐ Selecciona</option>
                         <option value="5">⭐⭐⭐⭐⭐ (Excelente)</option>
                         <option value="4">⭐⭐⭐⭐ (Muy bueno)</option>
@@ -43,7 +43,7 @@
             </div>
 
             <p style="padding-bottom: 1rem; margin-top: 1rem;">
-                <span style="background-color: #E0E7FF; color: var(--primary); padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 600; margin-right: 0.5rem;">
+                <span class="categoria" style="margin-right: 0.5rem; font-size: 13px;">
                     <%= banco.categoria %>
                 </span>
                 <span><%= banco.descripcion %></span>
@@ -59,7 +59,7 @@
             <% } %>
 
             <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); margin-top: 2rem; padding-top: 1rem;">
-                <h2 class="mt-2 text-primary" style="margin: 0;">Simulador (Modo Examen)</h2>
+                <h2 class="mt-2 text-white" style="margin: 0;">Simulador (Modo Examen)</h2>
                 <% if (preguntas.length > 0) { %>
                     <div id="examen-timer" style="background-color: var(--danger-color, #EF4444); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: bold; font-family: monospace; font-size: 1.25rem;">
                         ⏱️ <span id="time-display">10:00</span>
@@ -68,13 +68,13 @@
             </div>
 
             <% if (typeof leaderboard !== 'undefined' && leaderboard.length > 0) { %>
-                <div class="card" style="margin-top: 1.5rem; margin-bottom: 2rem; background-color: #FFFBEB; border: 1px solid #FDE68A; padding: 1.5rem;">
+                <div class="card" style="margin-top: 1.5rem; margin-bottom: 2rem; background-color: #1e293b; border: 1px solid #334155; padding: 1.5rem;">
                     <h3 style="color: #D97706; margin-top: 0; margin-bottom: 1rem; border-bottom: 1px solid #FDE68A; padding-bottom: 0.5rem;">🏆 Top 5 Mejores Intentos</h3>
                     <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem;">
                         <% leaderboard.forEach(function(intento, i) { %>
                             <li style="display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem;">
-                                <strong><span style="color: #B45309;">#<%= i + 1 %></span> <%= intento.nombre %></strong>
-                                <span><strong style="color: #059669;"><%= intento.puntaje %>/<%= intento.total %></strong> aciertos en <%= intento.tiempo_segundos %>s ⏱️</span>
+                                <strong><span style="color: #f59e0b;">#<%= i + 1 %></span> <%= intento.nombre %></strong>
+                                <span><strong style="color: #10b981;"><%= intento.puntaje %>/<%= intento.total %></strong> aciertos en <%= intento.tiempo_segundos %>s ⏱️</span>
                             </li>
                         <% }) %>
                     </ul>
@@ -85,7 +85,7 @@
                 <form id="examenForm" data-banco-id="<%= banco.id %>">
                     <div style="display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 2rem;">
                     <% preguntas.forEach((p, index) => { %>
-                        <div class="card pregunta-card" style="margin-bottom: 0; background-color: #F8FAFC;" data-correcta="<%= p.respuesta_correcta %>" data-id="<%= p.id %>">
+                        <div class="card pregunta-card" style="margin-bottom: 0; background-color: #1e293b;" data-correcta="<%= p.respuesta_correcta %>" data-id="<%= p.id %>">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                                 <h3 style="font-size: 1.1rem; margin-bottom: 1rem; color: var(--text-main);">
                                     <span style="color: var(--primary);"><%= index + 1 %>.</span> <%= p.enunciado %>
@@ -111,7 +111,7 @@
                                 %>
                                 
                                 <% opcionesAMostrar.forEach(opt => { %>
-                                    <label class="examen-option" style="background: white; padding: 0.75rem 1rem; border: 1px solid var(--border-color); border-radius: 6px;">
+                                    <label class="examen-option" style="background: #0f172a; padding: 0.75rem 1rem; border: 1px solid var(--border-color); border-radius: 6px;">
                                         <input type="radio" name="p_<%= index %>" value="<%= opt.letra %>" style="margin-right: 0.5rem;"> <strong><%= opt.letra %>)</strong> <%= opt.valor %>
                                     </label>
                                 <% }) %>
@@ -127,7 +127,7 @@
                 </form>
 
             <% } else { %>
-                <div class="card text-center" style="background-color: #F8FAFC; border-style: dashed; padding: 3rem;">
+                <div class="card text-center" style="background-color: #1e293b; border-style: dashed; padding: 3rem;">
                     <p style="margin: 0; color: var(--text-muted); font-size: 1.1rem;">Este banco aún no tiene preguntas.</p>
                 </div>
             <% } %>
@@ -138,9 +138,9 @@
 
             <% if (typeof user !== "undefined" && user.id === banco.autor_id) { %>
                 <hr style="margin: 3rem 0; border: 0; border-top: 1px solid var(--border-color);">
-                <div class="card" style="background-color: #F0FDF4; border-color: #BBF7D0;">
+                <div class="card" style="background-color: #1e293b; border-color: #334155;">
                     <div style="margin-bottom: 1.5rem;">
-                        <h2 style="color: #166534; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <h2 style="color: #4ade80; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
                             ➕ Agregar Nueva Pregunta
                         </h2>
                     </div>
@@ -179,7 +179,7 @@
                             </select>
                         </div>
 
-                        <button type="submit" style="background-color: #16A34A; transition: background-color 0.2s;">
+                        <button type="submit" style="background-color: #10b981; transition: background-color 0.2s;">
                             Guardar Pregunta en el Banco
                         </button>
                     </form>
