@@ -198,6 +198,8 @@
                         source_code = `${code}\nimport sys\nimport ast\ntry:\n    args = ast.literal_eval('[' + sys.stdin.read().strip() + ']')\nexcept:\n    args = eval('[' + sys.stdin.read().strip().replace('true', 'True').replace('false', 'False') + ']')\nprint(solucion(*args))`;
                     } else if (language_id === 63) { // JavaScript
                         source_code = `${code}\nconst fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim();\nlet args;\ntry { args = eval('[' + input + ']'); } catch(e) { args = [input]; }\nconsole.log(solucion(...args));`;
+                    } else if (language_id === 54) { // C++
+                        source_code = `#include <iostream>\nusing namespace std;\n${source_code}\nint main() {\n    int n;\n    cin >> n;\n    cout << (solucion(n) ? "true" : "false") << endl;\n    return 0;\n}`;
                     }
 
                     const response = await fetch('https://ce.judge0.com/submissions?wait=true', {
@@ -211,6 +213,10 @@
                     });
 
                     const data = await response.json();
+
+                    if (!data || !data.status) {
+                        throw new Error('Judge0 no devolvió respuesta válida');
+                    }
 
                     if (data.status.id !== 3) { // No Accepted (3)
                         allTestsPassed = false;
